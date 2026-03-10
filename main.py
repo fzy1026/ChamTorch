@@ -4,27 +4,47 @@ import random
 import math
 import matplotlib.pyplot as plt
 
+num = 100
+catagory = 5
+colors = [
+    'red',
+    'blue',
+    'green',
+    'yellow',
+    'black'
+]
+center = [
+    [5, -7.5],
+    [5, 5],
+    [-5, 5],
+    [0,0],
+    [-5, -5]
+]
+
 n_in = 2
 n_h1 = 6
 n_h2 = 6
 n_h3 = 6
-n_out = 1
+n_out = catagory
 batch_size = 10
-positive = 100
-negative = 100
 x = []
 y = []
-for i in range(positive):
-    X = random.randrange(-314, 314, 1) / 100
-    Y = math.sin(X) 
-    x.append([X, Y])
-    y.append([1.0])
-for i in range(negative):
-    X = random.randrange(-314, 314, 1) / 100
-    Y = math.cos(X) 
-    x.append([X, Y])
-    y.append([0.0])
 
+def generate_data():
+    for i in range(catagory):
+        for j in range(num):
+            r = random.uniform(0, 3)
+            angle = random.uniform(0, 2*math.pi)
+            R = random.uniform(0, r)
+            x.append([center[i][0] + R*math.cos(angle), center[i][1] + R*math.sin(angle)])
+            Y = [0.0] * catagory
+            Y[i] = 1.0
+            y.append(Y)
+
+
+
+
+generate_data()
 x = torch.tensor(x)
 y = torch.tensor(y)
 model = nn.Sequential(
@@ -46,17 +66,20 @@ for i in range(1000):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()#更新参数
+print(x)
+
 
 fig,ax = plt.subplots()
-ax.set_xlim(-3, 3)
-ax.set_ylim(-3, 3)
+ax.set_xlim(-10, 10)
+ax.set_ylim(-10, 10)
 ax.grid(True)
+for i in range(num * catagory):
+    ax.plot(x[i][0], x[i][1], colors[torch.argmax(y[i])], marker='o')  # 使用不同颜色表示不同类别的点
 
-for i in range(positive):
-    ax.plot(x[i][0], x[i][1], 'ro')  # 使用红色圆点表示正样本
-for i in range(positive, positive + negative):
-    ax.plot(x[i][0], x[i][1], 'bo')  # 使用蓝色圆点表示负样本
+    
+
 def on_click(event):
+    """
     # 检查是否在坐标轴内点击
     if event.inaxes != ax:
         return
@@ -71,10 +94,23 @@ def on_click(event):
     new_point = []
     new_point.append([x_click,y_click])
     y = model(torch.tensor(new_point)) # 获取模型预测的概率
-    if y.item() > 0.5:
-        ax.plot(x_click, y_click, 'ro')  # 使用红色圆点表示预测为正样本
-    else:
-        ax.plot(x_click, y_click, 'bo')  # 使用蓝色圆点表示预测为负样本
+    ax.plot(x_click, y_click, colors[torch.argmax(y)], marker='o')  # 使用不同颜色表示不同类别的点
     plt.draw()  # 更新图形显示
+    """
+    i = -10.0
+    while (i<10.0):
+        j = -10.0
+        while (j<10.0):
+            new_point = []
+            new_point.append([i,j])
+            y = model(torch.tensor(new_point)) # 获取模型预测的概率
+            ax.plot(i, j, colors[torch.argmax(y)], marker='o')  # 使用不同颜色表示不同类别的点
+            j += 0.8
+        i += 0.8
+    plt.draw()  # 更新图形显示
+
+    
+    
+
 cid = fig.canvas.mpl_connect('button_press_event', on_click)
 plt.show()
